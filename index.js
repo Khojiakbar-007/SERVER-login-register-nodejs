@@ -9,10 +9,10 @@ app.use(express.json());
 dotenv.config({ path: "./.env" });
 
 const db = mysql.createConnection({
-  host: process.env.DATABASE_HOST,
-  user: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE,
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
 });
 
 db.connect((err) => {
@@ -25,3 +25,11 @@ app.use("/auth", require("./routes/auth"));
 app.listen(process.env.PORT || 5000, () => {
   console.log("APp is running on port 5000... Ooooouuuuyeaaaaaah!");
 });
+
+//// for localhost ////
+// const db = mysql.createConnection({
+//   host: process.env.DATABASE_HOST,
+//   user: process.env.DATABASE_USER,
+//   password: process.env.DATABASE_PASSWORD,
+//   database: process.env.DATABASE,
+// });
