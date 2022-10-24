@@ -22,6 +22,6 @@ db.connect((err) => {
 
 app.use("/auth", require("./routes/auth"));
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log("APp is running on port 3000... Ooooouuuuyeaaaaaah!");
+app.listen(process.env.PORT || 5000, () => {
+  console.log("APp is running on port 5000... Ooooouuuuyeaaaaaah!");
 });
