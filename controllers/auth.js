@@ -1,5 +1,6 @@
 const mysql = require("mysql");
 const bcrypt = require("bcryptjs");
+const JWT = require("jsonwebtoken");
 
 const db = mysql.createConnection({
   host: process.env.DATABASE_HOST,
@@ -35,7 +36,13 @@ exports.register = (req, res) => {
           message: "Please, enter valid email",
         });
 
-      const hashedPass = await bcrypt.hash(password, 18);
+      // const hashedPass = await bcrypt.hash(password, 18);
+      let hashedPass;
+      try {
+        hashedPass = await bcrypt.hash(password, 18);
+      } catch (err) {
+        console.log(err);
+      }
 
       db.query(
         "INSERT INTO users SET ?",
@@ -50,13 +57,24 @@ exports.register = (req, res) => {
             console.log(results);
             return res.send({
               successful: true,
-              message: "Successfully registered!",
+              message: "Successfully registered, login now",
             });
           }
         }
       );
     }
   );
+};
+
+exports.loginGet = async (req, res) => {
+  if (req.session.user)
+    res.send({
+      successful: true,
+    });
+  else
+    res.send({
+      successful: false,
+    });
 };
 
 exports.login = async (req, res) => {
@@ -75,21 +93,67 @@ exports.login = async (req, res) => {
       [email],
       async (err, results) => {
         console.log(results);
-        if (!results || !bcrypt.compare(password, await results[0]?.password))
+        const passwordSame = results[0]?.password && bcrypt.compare(password, results[0].password);
+
+        if (!results || !passwordSame)
           return res.send({
             successful: false,
             message: "Email or Password is incorrect",
           });
         else {
-          const id = results[0]?.id;
-          res.status(200).send({
-            successful: true,
+          const id = results[0]?.email;
+          const Token = JWT.sign({ id }, process.env.JWT_SECRET, {
+            expiresIn: 60 * 60 * 24,
+          });
+          req.session.user = results[0]?.email;
+
+          res.send({
+            auth: true,
+            token: Token,
+            email: results[0]?.email,
             message: "Successfully logged in",
           });
+          // res.status(200).send({
+          //   successful: true,
+          // });
         }
       }
     );
   } catch (err) {
     console.log(err);
   }
+};
+
+exports.handleUserAuth = (req, res) => {
+  res.send({ auth: true, message: "you are authenticated" });
+};
+
+exports.verifyJWT = (req, res, next) => {
+  const Token = req.headers["x-access-token"];
+
+  if (!Token)
+    return res.send({
+      auth: false,
+      message: "failed to authenticate, no token received",
+    });
+  else {
+    JWT.verify(Token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err)
+        return res.send({
+          auth: false,
+          message: "failed to authorize",
+        });
+      else {
+        res.userId = decoded.id;
+        next();
+      }
+    });
+  }
+};
+
+exports.logout = (req, res) => {
+  req.session.destroy();
+  res.send({
+    message: "successfully logged out",
+  });
 };
